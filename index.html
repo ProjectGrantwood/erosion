@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<script src="p5.js"></script>
+	<script src="brush.js" defer></script>
+	<script src="clickhandlers.js" defer></script>
+	<script src="sketch.js" defer></script>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<meta charset="utf-8">
+</head>
+<body>
+	<div id="grid-wrapper">
+		<div id="info" class="dropdown">
+			<button>Environment</button>
+			<div class="dropdown-content">
+				<div id="drops"></div>
+				<div id="evaporationPhase"></div>
+				<button onclick="toggleDrops()">Toggle Water Visualization</button>
+				<button onclick="toggleEvaporationCycle()">Toggle Rain/Evaporation Cycle</button>
+			</div>
+		</div>
+		<div id="brushSizing" class="dropdown">
+			<button>Brush Size</button>
+			<div class="dropdown-content">
+				<button onclick="brush.increaseSize()">Brush Size +</button>
+				<button onclick="brush.decreaseSize()">Brush Size -</button>
+				Brush Size:
+				<div id="brushsize" name="brushsize"></div>
+			</div>
+		</div>
+		<div id="chooseBrushState" class="dropdown">
+			<button>Brush Function</button>
+			<div class="dropdown-content">
+				<button onclick="brush.setState(0)">Add Water</button>
+				<button onclick="brush.setState(1)">Remove Water</button>
+				<button onclick="brush.setState(2)">Increase Elevation</button>
+				<button onclick="brush.setState(3)">Decrease Elevation</button>
+				<button onclick="brush.setState(4)">Add Spring</button>
+				Brush State:
+				<div id="brushstate" name="brushstate"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
