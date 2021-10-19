@@ -9,7 +9,7 @@ const brush = {
 	},
 
 	removeWater(x, y) {
-		let dropsOnCell = drops.filter(e=>e.x === x && e.y === y);
+		let dropsOnCell = drops.filter(e => e.x === x && e.y === y);
 		for (let drop of dropsOnCell) {
 			let d = drops.indexOf(drop);
 			let x = drops[d].x;
@@ -20,11 +20,11 @@ const brush = {
 	},
 
 	addElevation(x, y, amt = sedimentDeposit) {
-		grid[x][y].elevation = grid[x][y].elevation + amt > maxHeight ? maxHeight: grid[x][y].elevation + amt;
+		grid[x][y].elevation = grid[x][y].elevation + amt > maxHeight ? maxHeight : grid[x][y].elevation + amt;
 	},
 
 	subElevation(x, y, amt = sedimentDeposit) {
-		grid[x][y].elevation = grid[x][y].elevation - amt < 0 ? 0: grid[x][y].elevation - amt;
+		grid[x][y].elevation = grid[x][y].elevation - amt < 0 ? 0 : grid[x][y].elevation - amt;
 	},
 
 	addSpring(x, y) {
@@ -82,42 +82,44 @@ const brush = {
 
 	increaseSize() {
 		this.size = this.size + 1;
-		this.render('brushsize', this.size);
+		this.render('brushsize', `Brush Size: ${this.size}`);
 	},
 
 	decreaseSize() {
 		this.size = this.size - 1;
-		this.size = this.size < 1 ? 1: this.size;
-		this.render('brushsize', this.size);
+		this.size = this.size < 1 ? 1 : this.size;
+		this.render('brushsize', `Brush Size: ${this.size}`);
 	},
 
 	cycleState() {
 		this.state += 1;
-		this.state = this.state === this.states.length ? 0: this.state;
-		this.render('brushstate', this.getState(true));
+		this.state = this.state === this.states.length ? 0 : this.state;
+		this.render('brushstate', `Current Brush Function: ${this.getState(true)}`);
 	},
 
 	getState(toRender) {
 		if (toRender) {
 			return this.stateNames[this.state];
 		}
+		let renderString;
 		switch (this.states[this.state]) {
-			case 'addWater': return this.addWater;
-				case 'removeWater': return this.removeWater;
-					case 'addElevation': return this.addElevation;
-						case 'subElevation': return this.subElevation;
-							case 'addSpring': return this.addSpring;
-								case 'removeSpring': return this.removeSpring;
-							}
-					},
-
-					setState(indexOrStateId) {
-						let type = typeof indexOrStateId;
-						switch (type) {
-							case 'number': this.state = indexOrStateId; break;
-							case 'String': this.state = this.states.indexOf(indexOrStateId); break;
-						}
-						this.render('brushstate', this.getState(true));
-				}
-
+			case 'addWater': renderString = this.addWater; break;
+			case 'removeWater': renderString = this.removeWater; break;
+			case 'addElevation': renderString = this.addElevation; break;
+			case 'subElevation': renderString = this.subElevation; break;
+			case 'addSpring': renderString = this.addSpring; break;
+			case 'removeSpring': renderString = this.removeSpring; break;
 		}
+		return renderString;
+	},
+
+	setState(indexOrStateId) {
+		let type = typeof indexOrStateId;
+		switch (type) {
+			case 'number': this.state = indexOrStateId; break;
+			case 'String': this.state = this.states.indexOf(indexOrStateId); break;
+		}
+		this.render('brushstate', `Current Brush Function: ${this.getState(true)}`);
+	}
+
+}

@@ -1,0 +1,85 @@
+html, body {
+	background-color: black;
+	color: white;
+}
+
+button {
+	outline: 0px;
+	border: 0px;
+	font-size: 16px;
+}
+
+
+
+#grid-wrapper {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	grid-template-rows: 1fr 1fr 1fr;
+	gap: 4px;
+	grid-template-areas: "a b b"
+						 "c b b"
+						 "d b b"
+}
+
+#defaultCanvas0 {
+	outline: 1px solid orange;
+	grid-area: b;
+}
+
+#info {
+	grid-area: a;
+}
+
+#brushSizing {
+	grid-area: c;
+}
+
+#chooseBrushState {
+	grid-area: d;
+}
+
+.dropdown-active > div {
+	outline: 0px;
+	border: 0px;
+	font-size: 16px;
+	margin: 4px;
+}
+
+.dropdown {
+	display: grid;
+	position: relative;
+}
+
+.dropdown > button {
+	background-color: #A0D6A0;
+}
+
+.dropdown > button:hover {
+	background-color: #B6F0B6;
+}
+
+.dropdown-inactive {
+	display: none;
+	width: 100%;
+	overflow: visible;
+	box-shadow: 0px 10px 10px 0px rgba(0,0,0,0.4);
+}
+
+.dropdown-active {
+	display: grid;
+	width: 100%;
+	max-height: 1fr;
+	background-color: #A0A0A0;
+	color: black;
+	column-gap: 4px;
+	font-size: 16px;
+	text-align: center;
+}
+
+.dropdown-active > div {
+	margin: 4px;
+}
+
+.dropdown-active > button:hover {
+	background-color: #A0A0D6;
+}

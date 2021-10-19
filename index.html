@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<script src="p5.js"></script>
-	<script src="brush.js" defer></script>
-	<script src="clickhandlers.js" defer></script>
-	<script src="sketch.js" defer></script>
-	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="libraries/p5.js"></script>
+	<script src="js/brush.js" defer></script>
+	<script src="js/clickhandlers.js" defer></script>
+	<script src="js/sketch.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/erosion.css">
 	<meta charset="utf-8">
 </head>
 <body>
 	<div id="grid-wrapper">
 		<div id="info" class="dropdown">
-			<button>Environment</button>
-			<div class="dropdown-content">
+			<button id="environmentbutton" onclick="toggleDropdown('dropdown-content-info')">Environment</button>
+			<div class="dropdown-inactive" id="dropdown-content-info">
 				<div id="drops"></div>
 				<div id="evaporationPhase"></div>
 				<button onclick="toggleDrops()">Toggle Water Visualization</button>
@@ -20,23 +20,21 @@
 			</div>
 		</div>
 		<div id="brushSizing" class="dropdown">
-			<button>Brush Size</button>
-			<div class="dropdown-content">
+			<button id="brushsizebutton" onclick="toggleDropdown('dropdown-content-brushsize')">Brush Size</button>
+			<div class="dropdown-inactive" id="dropdown-content-brushsize">
 				<button onclick="brush.increaseSize()">Brush Size +</button>
 				<button onclick="brush.decreaseSize()">Brush Size -</button>
-				Brush Size:
 				<div id="brushsize" name="brushsize"></div>
 			</div>
 		</div>
 		<div id="chooseBrushState" class="dropdown">
-			<button>Brush Function</button>
-			<div class="dropdown-content">
+			<button id="brushfunctionbutton" onclick="toggleDropdown('dropdown-content-brushfunction')">Brush Function</button>
+			<div class="dropdown-inactive" id="dropdown-content-brushfunction">
 				<button onclick="brush.setState(0)">Add Water</button>
 				<button onclick="brush.setState(1)">Remove Water</button>
 				<button onclick="brush.setState(2)">Increase Elevation</button>
 				<button onclick="brush.setState(3)">Decrease Elevation</button>
 				<button onclick="brush.setState(4)">Add Spring</button>
-				Brush State:
 				<div id="brushstate" name="brushstate"></div>
 			</div>
 		</div>

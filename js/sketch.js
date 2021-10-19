@@ -1,4 +1,4 @@
-let w = screen.availWidth;
+let w = 300;
 let h = 300;
 let von_neumann = [
 	[0, -1],
@@ -17,7 +17,7 @@ let moore = [
 	[-1, 0],
 	[-1, -1]
 ];
-const defaultNeighborhood = von_neumann;
+const defaultNeighborhood = moore;
 const cellSize = 1;
 
 let endCol = [255, 255, 0];
@@ -30,7 +30,7 @@ let maxDrops = 50000;
 let evaporationRate = 50;
 let rainRate = 50;
 let rainRatio = 1 / 8;
-let sedimentDeposit = 1;
+let sedimentDeposit = 1 / 9;
 let springTrickleRate = 10;
 
 let viewDrops = true;
@@ -39,7 +39,7 @@ let evaporatingPhase = 0;
 let drops = [];
 const grid = new Array(w).fill().map(e => new Array(h).fill(0));
 let toppledCells = [];
-const noiseScale = 45;
+const noiseScale = 75;
 
 let springs = [{
 	x: Math.floor(w / 2),
@@ -57,12 +57,16 @@ let evaporationCycle = 0;
 let evaporationFrequency = 10;
 let evaporationPhaseDuration = 0.5;
 let turnProbability = 0.5;
-let maxWaterLevelToRender = 2;
+let maxWaterLevelToRender = 4;
 
 
 function setup() {
 	createCanvas(w, h);
-	noiseDetail(8, 0.5);
+	pixelDensity(1);
+	const canvas = document.getElementById('defaultCanvas0');
+	const grid_wrapper = document.getElementById('grid-wrapper');
+	grid_wrapper.appendChild(canvas);
+	noiseDetail(5, 0.5);
 	background(0);
 	for (let x = 0; x < w; x++) {
 		for (let y = 0; y < h; y++) {
@@ -79,11 +83,6 @@ function setup() {
 			};
 		}
 	}
-	pixelDensity(1);
-	// for (let i = 0; i < Math.round(maxDrops * rainRatio); i++) {
-	// 	addWater(Math.floor(Math.random() * w), Math.floor(Math.random() * h));
-	// }
-
 }
 
 function draw() {
@@ -97,7 +96,6 @@ function draw() {
 			}
 		} else {
 			for (let i = 0; i < rainRate; i++) {
-				//addWater();
 				rain();
 			}
 		}
@@ -180,8 +178,9 @@ function mousePressed() {
 
 function renderAll() {
 	loadPixels();
-	for (let x = 0; x < width; x++) {
-		for (let y = 0; y < height; y++) {
+	let pix = 0;
+	for (let y = 0; y < height; y++) {
+		for (let x = 0; x < width; x++) {
 			let e = grid[x][y].elevation / 255;
 			let r = (startCol[0] * (1 - e) + endCol[0] * e);
 			let g = (startCol[1] * (1 - e) + endCol[1] * e);
@@ -189,15 +188,14 @@ function renderAll() {
 			let col = [r,
 				g,
 				b];
-			if (grid[x][y].water > 0 && viewDrops) {
+			if (viewDrops && grid[x][y].water > 0) {
 				col[2] = (grid[x][y].elevation + grid[x][y].water) / (grid[x][y].elevation + sedimentDeposit) * 255 /((maxWaterLevelToRender - grid[x][y].water) < 1 ? 1 / (grid[x][y].water): maxWaterLevelToRender - grid[x][y].water);
 			}
-			col.push(255);
-			let pix = (x + y * width) * 4;
-			pixels[pix] = col[0];
-			pixels[pix + 1] = col[1];
-			pixels[pix + 2] = col[2];
-			pixels[pix + 3] = col[3];
+			col[3] = 255;
+			pixels[pix++] = col[0];
+			pixels[pix++] = col[1];
+			pixels[pix++] = col[2];
+			pixels[pix++] = col[3];
 		}
 	}
 	updatePixels();
@@ -209,10 +207,7 @@ function evaporate() {
 	let x = drops[d].x;
 	let y = drops[d].y;
 	grid[x][y].water -= 1;
-	//grid[x][y].elevation += drops[d].sedimentLoad;
-	//drops[d].erode();
 	drops.splice(d, 1);
-	//topple(x, y);
 	monitorEvaporationCycle();
 }
 
@@ -257,31 +252,18 @@ class Water {
 
 	turn(rightOrLeft) {
 		this.dir = rightOrLeft === 'right' ? (this.neighborhood.length + this.dir + 1) % this.neighborhood.length: (this.neighborhood.length + this.dir - 1) % this.neighborhood.length;
-		//	this.depositLoad();
 	}
 
 	try () {
-		//this.depositLoad();
 		let current = this.getCurrentElevation() - sedimentDeposit;
 		let proposed = this.getProposedElevation() + sedimentDeposit;
 		if (current >= proposed) {
-			//if (current / proposed >= 1.125) {
-			//this.erode();
-			//	}
-			//this.depositLoad();
-			//this.erode();
-			//this.erode();
-			//this.depositLoad();
 			this.moveForward();
-			// this.depositLoad();
-			//this.erode();
 		} else {
 			this.depositLoad();
-			// this.erode();
 			let p = Math.random();
 			if (p < 1/2) {
 				this.turn('right')
-
 			} else {
 				this.turn('left');
 			}
@@ -290,17 +272,6 @@ class Water {
 
 	erode() {
 		topple(this.x, this.y);
-		// for (let n of this.neighborhood) {
-		// 	if (n === this.neighborhood[this.dir]) {
-		// 		continue;
-		// 	}
-		// 	let x = this.x + n[0];
-		// 	let y = this.y + n[1];
-		// 	x = x < 0 ? width - 1: x >= width ? 0: x;
-		// 	y = y < 0 ? height - 1: y >= height ? 0: y;
-		// 	//topple(x, y);
-		// }
-
 	}
 
 	moveForward() {
@@ -309,15 +280,13 @@ class Water {
 		let y = this.y + direction[1];
 		x = x < 0 ? width - 1: x >= width ? 0: x;
 		y = y < 0 ? height - 1: y >= height ? 0: y;
-		let depositAmount = sedimentDeposit//grid[this.x][this.y].elevation - sedimentDeposit > minHeight && grid[this.x][this.y].elevation - sedimentDeposit > grid[x][y].elevation + sedimentDeposit && grid[x][y].elevation + sedimentDeposit < maxHeight ? sedimentDeposit: 0//(grid[x][y].elevation / grid[this.x][this.y].elevation) : 0;
+		let depositAmount = sedimentDeposit;
 		grid[this.x][this.y].water -= grid[this.x][this.y].water > 0 ? 1: 0;
-
 		grid[this.x][this.y].elevation -= depositAmount;
 		this.sedimentLoad += depositAmount;
 		this.x = x;
 		this.y = y;
 		grid[this.x][this.y].water += 1;
-
 		if (Math.random() < turnProbability) {
 			return this.turn(['left', 'right'][Math.floor(Math.random() * 2)])
 		}
@@ -341,42 +310,7 @@ class Water {
 		if (this.sedimentLoad >= sedimentDeposit) {
 			grid[this.x][this.y].elevation += sedimentDeposit
 			this.sedimentLoad -= sedimentDeposit;
-			//topple(this.x, this.y);
 		}
-		//  let x = this.x;
-		// let y = this.y;
-		// let direction = this.neighborhood[this.dir];
-		// x += direction[0];
-		// y += direction[1];
-		// x = x < 0 ? width - 1 : x >= width ? 0 : x;
-		// y = y < 0 ? height - 1 : y >= height ? 0 : y;
-		// if (grid[x][y].elevation < maxHeight && grid[x][y].elevation < grid[this.x][this.y].elevation) {
-		// grid[x][y].elevation += this.sedimentLoaad / 2;
-		// } else {
-		//   grid[this.x][this.y].elevation += this.sedimentLoad / 2;
-		// }
-		// this.sedimentLoad = 0;
-		//let toDeposit = [];
-		//  for (let i = -2; i <= 2; i++){
-		//    toDeposit.push(this.neighborhood[(this.dir + this.neighborhood.length + i) % this.neighborhood.length])
-		//  }
-		//  let amts = [1 / 25, 3 / 25, 8 / 25, 3 / 25, 1/ 25];
-		//  let sloshBack = 0;
-		//  for (let d = 0; d < toDeposit.length; d++){
-		//    let dep = toDeposit[d];
-		//    let x = this.x + dep[0];
-		//    let y = this.y + dep[1];
-		//     x = x < 0 ? width - 1 : x >= width ? 0 : x;
-		//    y = y < 0 ? height - 1 : y >= height ? 0 : y;
-		//    if (grid[this.x][this.y].elevation > grid[x][y].elevation + amts[d] * this.sedimentLoad){
-		//    grid[x][y].elevation += amts[d] * this.sedimentLoad/2;
-		//    } else {
-		//      sloshBack += amts[d] * this.sedimentLoad/2;
-		//    }
-		//    grid[x][y].elevation += amts[d] * this.sedimentLoad/2;
-		//  }
-		// grid[this.x][this.y].elevation += 9 / 25 * this.sedimentLoad / 2
-		// this.sedimentLoad = 0;
 	}
 
 }
@@ -387,8 +321,4 @@ function toggleDrops() {
 	} else {
 		viewDrops = true;
 	}
-}
-
-function process(a, b, c, d, e, f) {
-	return a * (b ** (c + b)) + b * (c ** (f * e)) + d * e;
 }
