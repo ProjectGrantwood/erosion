@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<!--Library scripts-->
 	<script src="libraries/p5.js"></script>
+	<script src="libraries/quadtree.js"></script>
+	<script src="js/neighborhoods.js"></script>
+	<!--simulation scripts-->
+	<script src="js/utilities.js"></script>
+	<script src="js/drops.js"></script>
 	<script src="js/brush.js" defer></script>
+	<script src="js/sketch.js" defer></script>
+	<!--DOM manipulation scripts-->
 	<script src="js/clickhandlers.js" defer></script>
-	<script src="js/sketch.js"></script>
 	<link rel="stylesheet" type="text/css" href="css/erosion.css">
 	<meta charset="utf-8">
 </head>
@@ -15,8 +22,9 @@
 			<div class="dropdown-inactive" id="dropdown-content-info">
 				<div id="drops"></div>
 				<div id="evaporationPhase"></div>
-				<button onclick="toggleDrops()">Toggle Water Visualization</button>
-				<button onclick="toggleEvaporationCycle()">Toggle Rain/Evaporation Cycle</button>
+				<button onclick="SETTINGS.toggle('viewDrops')">Toggle Water Visualization</button>
+				<button onclick="SETTINGS.toggle('evaporationCycleEnabled')">Toggle Rain/Evaporation Cycle</button>
+				<button onclick="SETTINGS.toggle('erosionEnabled')">Toggle Erosion</button>
 			</div>
 		</div>
 		<div id="brushSizing" class="dropdown">
@@ -24,7 +32,6 @@
 			<div class="dropdown-inactive" id="dropdown-content-brushsize">
 				<button onclick="brush.increaseSize()">Brush Size +</button>
 				<button onclick="brush.decreaseSize()">Brush Size -</button>
-				<div id="brushsize" name="brushsize"></div>
 			</div>
 		</div>
 		<div id="chooseBrushState" class="dropdown">
@@ -35,7 +42,6 @@
 				<button onclick="brush.setState(2)">Increase Elevation</button>
 				<button onclick="brush.setState(3)">Decrease Elevation</button>
 				<button onclick="brush.setState(4)">Add Spring</button>
-				<div id="brushstate" name="brushstate"></div>
 			</div>
 		</div>
 	</div>

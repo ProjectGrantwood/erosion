@@ -1,85 +1,81 @@
-let w = 300;
-let h = 300;
-let von_neumann = [
-	[0, -1],
-	[1, 0],
-	[0, 1],
-	[-1, 0]
-];
+const W = 312;
+const H = 312;
 
-let moore = [
-	[0, -1],
-	[1, -1],
-	[1, 0],
-	[1, 1],
-	[0, 1],
-	[-1, 1],
-	[-1, 0],
-	[-1, -1]
-];
-const defaultNeighborhood = moore;
-const cellSize = 1;
+const DEFAULT_NEIGHBORHOOD = getNeighborhood('moore');
 
-let endCol = [255, 255, 0];
-let startCol = [0, 0, 0];
+const MAX_ELEVATION = 255;
+const MIN_ELEVATION = 0;
 
-let maxHeight = 255;
-let minHeight = 0;
+const COLOR_MAX_ELEVATION = [192, 216, 128];
+const COLOR_MIN_ELEVATION = [0, 0, 0];
 
-let maxDrops = 50000;
-let evaporationRate = 50;
-let rainRate = 50;
-let rainRatio = 1 / 8;
-let sedimentDeposit = 1 / 9;
-let springTrickleRate = 10;
+const SETTINGS = {
 
-let viewDrops = true;
-let evaporatingPhase = 0;
+	//settings with numeric values
 
+	maxDrops: 50000,
+	evaporationRate: 50,
+	rainRate: 50,
+	minDropRatio: 1 / 8,
+	erosionFactor: 1 / 3,
+	baseSpringGenerationRate: 10,
+	noiseScale: 1 / 75,
+	rainyRegionRadius: 40,
+	turnProbability: 0.5,
+	clampWaterDisplayLevel: 2,
+
+	//boolean settings
+
+	viewDrops: true,
+	isInEvaporationPhase: false,
+	evaporationCycleEnabled: false,
+	erosionEnabled: true,
+	toggle(property) {
+		this[property] = toggle(this[property]);
+	},
+
+	//object settings
+
+	rainyRegionCenter: {
+		x: Math.floor(W / 2),
+		y: Math.floor(H / 2)
+	},
+
+
+
+}
+
+let grid = new Array(W).fill().map(e => new Array(H).fill(0));
 let drops = [];
-const grid = new Array(w).fill().map(e => new Array(h).fill(0));
 let toppledCells = [];
-const noiseScale = 75;
-
 let springs = [{
-	x: Math.floor(w / 2),
-	y: Math.floor(h / 2),
-	offset: Math.floor(Math.random() * springTrickleRate)
+	x: Math.floor(W / 2),
+	y: Math.floor(H / 2),
+	offset: Math.floor(Math.random() * SETTINGS.baseSpringGenerationRate)
 }];
-
-let rainyRegionCenter = {
-	x: Math.floor(w / 2),
-	y: Math.floor(h / 2)
-};
-
-let rainyRegionRadius = 40;
-let evaporationCycle = 0;
-let evaporationFrequency = 10;
-let evaporationPhaseDuration = 0.5;
-let turnProbability = 0.5;
-let maxWaterLevelToRender = 4;
 
 
 function setup() {
-	createCanvas(w, h);
+	createCanvas(W, H);
 	pixelDensity(1);
 	const canvas = document.getElementById('defaultCanvas0');
 	const grid_wrapper = document.getElementById('grid-wrapper');
 	grid_wrapper.appendChild(canvas);
 	noiseDetail(5, 0.5);
 	background(0);
-	for (let x = 0; x < w; x++) {
-		for (let y = 0; y < h; y++) {
+	for (let x = 0; x < W; x++) {
+		for (let y = 0; y < H; y++) {
 
-			let xoff = x + w / 2;
-			let yoff = y + h / 1.5;
-			let n = noise(xoff / noiseScale, yoff / noiseScale);
-			let elevation = n * 255; //(minHeight + (maxHeight - minHeight)) / 2 - 127 + (0.5 + n) * 127;
+			let xoff = x + W / 2;
+			let yoff = y - H / 1.5;
+			let n = 0.5 + 0.25 * Math.cos(TAU * noise((xoff * SETTINGS.noiseScale), (yoff * SETTINGS.noiseScale)));
+			let elevation = n * 255; //(minH + (maxH - minH)) / 2 - 127 + (0.5 + n) * 127;
 			grid[x][y] = {
 				elevation: elevation,
 				toppleElevation: elevation,
 				toppled: 0,
-				water: 0
+				waterLevel: 0,
+				
 			};
 		}
 	}
@@ -89,33 +85,34 @@ function draw() {
 	if (mouseIsPressed) {
 		mousePressed();
 	}
-	if (evaporationCycle) {
-		if (evaporatingPhase) {
-			for (let i = 0; i < evaporationRate; i++) {
+	if (SETTINGS.evaporationCycleEnabled) {
+		if (SETTINGS.isInEvaporationPhase) {
+			for (let i = 0; i < SETTINGS.evaporationRate; i++) {
 				evaporate();
 			}
 		} else {
-			for (let i = 0; i < rainRate; i++) {
+			for (let i = 0; i < SETTINGS.rainRate; i++) {
 				rain();
 			}
 		}
 	}
 	for (let s of springs) {
-		if ((frameCount + springTrickleRate) % (springTrickleRate - s.offset) === 0) {
-			brush.addElevation(s.x, s.y, 1);
+		if ((frameCount + SETTINGS.baseSpringGenerationRate) % (SETTINGS.baseSpringGenerationRate - s.offset) === 0) {
+			brush.addElevation(s.x, s.y);
 			brush.addWater(s.x, s.y, 1);
 		}
 	}
 	for (let d = 0; d < drops.length; d++) {
-		drops[d].try();
+		drops[d].update();
 	}
+	
 	swapToppledElevation();
 	renderAll();
 	document.getElementById('drops').innerHTML = `Number of Drops: ${drops.length}`;
-	document.getElementById('evaporationPhase').innerHTML = `Evaporation Phase: ${evaporatingPhase === 1 ? 'Evaporating': 'Raining'}`
+	document.getElementById('evaporationPhase').innerHTML = `Evaporation Phase: ${SETTINGS.isInEvaporationPhase === true ? 'Evaporating': 'Raining'}`
 }
 
-function topple(x, y, neighborhood = defaultNeighborhood) {
+function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
 	if (grid[x][y].elevation < neighborhood.length) {
 		return;
 	}
@@ -123,15 +120,15 @@ function topple(x, y, neighborhood = defaultNeighborhood) {
 	for (let n of neighborhood) {
 		let x2 = x + n[0];
 		let y2 = y + n[1];
-		x2 = x2 < 0 ? width - 1: x2 > width - 1 ? 0: x2;
-		y2 = y2 < 0 ? height - 1: y2 > height - 1 ? 0: y2;
-		if (grid[x][y].elevation - neighborhood.length > grid[x2][y2].elevation + sedimentDeposit) {
-			grid[x2][y2].toppleElevation += sedimentDeposit;
+		x2 = x2 < 0 ? W - 1: x2 > W - 1 ? 0: x2;
+		y2 = y2 < 0 ? H - 1: y2 > H - 1 ? 0: y2;
+		if (grid[x][y].elevation - neighborhood.length > grid[x2][y2].elevation + SETTINGS.erosionFactor) {
+			grid[x2][y2].toppleElevation += SETTINGS.erosionFactor;
 			if (grid[x2][y2].toppled === 0) {
 				toppledCells.push([x2, y2]);
 				grid[x2][y2].toppled = 1;
 			}
-			total += sedimentDeposit;
+			total += SETTINGS.erosionFactor;
 		}
 	}
 	grid[x][y].toppleElevation -= total;
@@ -153,10 +150,10 @@ function swapToppledElevation() {
 }
 
 function toggleEvaporationCycle() {
-	if (evaporationCycle === 1) {
-		evaporationCycle = 0;
-	} else if (evaporationCycle === 0) {
-		evaporationCycle = 1;
+	if (SETTINGS.evaporationCycleEnabled === true) {
+		SETTINGS.evaporationCycleEnabled = false;
+	} else if (SETTINGS.evaporationCycleEnabled === false) {
+		SETTINGS.evaporationCycleEnabled = true;
 	}
 }
 
@@ -167,7 +164,7 @@ function mouseDragged() {
 function mousePressed() {
 	let x = Math.floor(mouseX);
 	let y = Math.floor(mouseY);
-	if (!(x > -1 && y > -1 && x < w && y < h)) {
+	if (!(x > -1 && y > -1 && x < W && y < H)) {
 		return;
 	}
 	brush.applyOverRadius(brush.getState(false), x, y);
@@ -179,17 +176,17 @@ function mousePressed() {
 function renderAll() {
 	loadPixels();
 	let pix = 0;
-	for (let y = 0; y < height; y++) {
-		for (let x = 0; x < width; x++) {
+	for (let y = 0; y < H; y++) {
+		for (let x = 0; x < W; x++) {
 			let e = grid[x][y].elevation / 255;
-			let r = (startCol[0] * (1 - e) + endCol[0] * e);
-			let g = (startCol[1] * (1 - e) + endCol[1] * e);
-			let b = (startCol[2] * (1 - e) + endCol[2] * e);
+			let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
+			let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
+			let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
 			let col = [r,
 				g,
 				b];
-			if (viewDrops && grid[x][y].water > 0) {
-				col[2] = (grid[x][y].elevation + grid[x][y].water) / (grid[x][y].elevation + sedimentDeposit) * 255 /((maxWaterLevelToRender - grid[x][y].water) < 1 ? 1 / (grid[x][y].water): maxWaterLevelToRender - grid[x][y].water);
+			if (SETTINGS.viewDrops && grid[x][y].waterLevel > 0) {
+				col[2] = (grid[x][y].elevation + grid[x][y].waterLevel) / (grid[x][y].elevation + SETTINGS.erosionFactor) * 255 /((SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel) < 1 ? 1 / (grid[x][y].waterLevel): SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel);
 			}
 			col[3] = 255;
 			pixels[pix++] = col[0];
@@ -206,119 +203,36 @@ function evaporate() {
 	let d = Math.floor(Math.random() * drops.length);
 	let x = drops[d].x;
 	let y = drops[d].y;
-	grid[x][y].water -= 1;
+	grid[x][y].waterLevel -= 1;
 	drops.splice(d, 1);
 	monitorEvaporationCycle();
 }
 
 function rain() {
-	let x = Math.floor(randomGaussian(rainyRegionCenter.x, rainyRegionRadius));
-	let y = Math.floor(randomGaussian(rainyRegionCenter.y, rainyRegionRadius));
-	while (x < 0) {
-		x += width;
-	}
-	while (y < 0) {
-		y += height;
-	}
-	while (x > width - 1) {
-		x -= width;
-	}
-	while (y > height - 1) {
-		y -= height
-	}
+	let x = Math.floor(randomGaussian(SETTINGS.rainyRegionCenter.x, SETTINGS.rainyRegionRadius));
+	let y = Math.floor(randomGaussian(SETTINGS.rainyRegionCenter.y, SETTINGS.rainyRegionRadius));
+	x = wrap(x, 0, W - 1);
+	y = wrap(y, 0, H - 1);
 	brush.addWater(x, y, 1);
 	monitorEvaporationCycle();
 }
 
 function monitorEvaporationCycle() {
-	if (drops.length < maxDrops * rainRatio) {
-		evaporatingPhase = 0;
+	if (!SETTINGS.evaporationCycleEnabled) {
+		return;
 	}
-	if (drops.length >= maxDrops) {
-		evaporatingPhase = 1;
+	if (drops.length < SETTINGS.maxDrops * SETTINGS.minDropRatio) {
+		SETTINGS.isInEvaporationPhase = false;
 	}
-}
-
-
-
-class Water {
-	constructor(x, y, neighborhood = defaultNeighborhood) {
-		this.x = x;
-		this.y = y;
-		this.dir = Math.floor(Math.random() * neighborhood.length);
-		this.neighborhood = neighborhood;
-		this.sedimentLoad = 0;
+	if (drops.length >= SETTINGS.maxDrops) {
+		SETTINGS.isInEvaporationPhase = true;
 	}
-
-	turn(rightOrLeft) {
-		this.dir = rightOrLeft === 'right' ? (this.neighborhood.length + this.dir + 1) % this.neighborhood.length: (this.neighborhood.length + this.dir - 1) % this.neighborhood.length;
-	}
-
-	try () {
-		let current = this.getCurrentElevation() - sedimentDeposit;
-		let proposed = this.getProposedElevation() + sedimentDeposit;
-		if (current >= proposed) {
-			this.moveForward();
-		} else {
-			this.depositLoad();
-			let p = Math.random();
-			if (p < 1/2) {
-				this.turn('right')
-			} else {
-				this.turn('left');
-			}
-		}
-	}
-
-	erode() {
-		topple(this.x, this.y);
-	}
-
-	moveForward() {
-		let direction = this.neighborhood[this.dir];
-		let x = this.x + direction[0];
-		let y = this.y + direction[1];
-		x = x < 0 ? width - 1: x >= width ? 0: x;
-		y = y < 0 ? height - 1: y >= height ? 0: y;
-		let depositAmount = sedimentDeposit;
-		grid[this.x][this.y].water -= grid[this.x][this.y].water > 0 ? 1: 0;
-		grid[this.x][this.y].elevation -= depositAmount;
-		this.sedimentLoad += depositAmount;
-		this.x = x;
-		this.y = y;
-		grid[this.x][this.y].water += 1;
-		if (Math.random() < turnProbability) {
-			return this.turn(['left', 'right'][Math.floor(Math.random() * 2)])
-		}
-	}
-
-	getCurrentElevation() {
-		return grid[this.x][this.y].elevation + grid[this.x][this.y].water;
-	}
-	getProposedElevation() {
-		let x = this.x;
-		let y = this.y;
-		let direction = this.neighborhood[this.dir];
-		x += direction[0];
-		y += direction[1];
-		x = x < 0 ? width - 1: x >= width ? 0: x;
-		y = y < 0 ? height - 1: y >= height ? 0: y;
-		return grid[x][y].elevation + grid[x][y].water;
-	}
-
-	depositLoad() {
-		if (this.sedimentLoad >= sedimentDeposit) {
-			grid[this.x][this.y].elevation += sedimentDeposit
-			this.sedimentLoad -= sedimentDeposit;
-		}
-	}
-
 }
 
 function toggleDrops() {
-	if (viewDrops) {
-		viewDrops = false;
+	if (SETTINGS.viewDrops) {
+		SETTINGS.viewDrops = false;
 	} else {
-		viewDrops = true;
+		SETTINGS.viewDrops = true;
 	}
 }
