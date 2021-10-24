@@ -1,13 +1,13 @@
-const W = 312;
-const H = 312;
-
-const DEFAULT_NEIGHBORHOOD = getNeighborhood('moore');
+const W = Math.floor(screen.availWidth / 4);
+const H = 419;
 
 const MAX_ELEVATION = 255;
 const MIN_ELEVATION = 0;
 
-const COLOR_MAX_ELEVATION = [192, 216, 128];
+const COLOR_MAX_ELEVATION = [192, 255, 216];
 const COLOR_MIN_ELEVATION = [0, 0, 0];
+
+const DEFAULT_NEIGHBORHOOD = getNeighborhood('moore');
 
 const SETTINGS = {
 
@@ -16,13 +16,13 @@ const SETTINGS = {
 	maxDrops: 50000,
 	evaporationRate: 50,
 	rainRate: 50,
-	minDropRatio: 1 / 8,
-	erosionFactor: 1 / 3,
+	minDropRatio: 1 / 4,
+	erosionFactor: 0.125,
 	baseSpringGenerationRate: 10,
 	noiseScale: 1 / 75,
-	rainyRegionRadius: 40,
-	turnProbability: 0.5,
-	clampWaterDisplayLevel: 2,
+	rainyRegionRadius: Math.floor(Math.sqrt(W * H)),
+	turnProbability: 0.8,
+	clampWaterDisplayLevel: 3,
 
 	//boolean settings
 
@@ -30,6 +30,7 @@ const SETTINGS = {
 	isInEvaporationPhase: false,
 	evaporationCycleEnabled: false,
 	erosionEnabled: true,
+
 	toggle(property) {
 		this[property] = toggle(this[property]);
 	},
@@ -40,8 +41,6 @@ const SETTINGS = {
 		x: Math.floor(W / 2),
 		y: Math.floor(H / 2)
 	},
-
-
 
 }
 
@@ -65,11 +64,10 @@ function setup() {
 	background(0);
 	for (let x = 0; x < W; x++) {
 		for (let y = 0; y < H; y++) {
-
 			let xoff = x + W / 2;
-			let yoff = y - H / 1.5;
-			let n = 0.5 + 0.25 * Math.cos(TAU * noise((xoff * SETTINGS.noiseScale), (yoff * SETTINGS.noiseScale)));
-			let elevation = n * 255; //(minH + (maxH - minH)) / 2 - 127 + (0.5 + n) * 127;
+			let yoff = y + H / 1.5;
+			let n = 0.5 + 0.5 * (noise((xoff * SETTINGS.noiseScale), (yoff * SETTINGS.noiseScale)) - 0.5);
+			let elevation = Math.floor((n * 255) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor; //(minH + (maxH - minH)) / 2 - 127 + (0.5 + n) * 127;
 			grid[x][y] = {
 				elevation: elevation,
 				toppleElevation: elevation,
@@ -82,9 +80,6 @@ function setup() {
 }
 
 function draw() {
-	if (mouseIsPressed) {
-		mousePressed();
-	}
 	if (SETTINGS.evaporationCycleEnabled) {
 		if (SETTINGS.isInEvaporationPhase) {
 			for (let i = 0; i < SETTINGS.evaporationRate; i++) {
@@ -158,7 +153,8 @@ function toggleEvaporationCycle() {
 }
 
 function mouseDragged() {
-	return mousePressed();
+	mousePressed();
+	return false;
 }
 
 function mousePressed() {
@@ -171,31 +167,64 @@ function mousePressed() {
 	return false;
 }
 
+function mouseMoved(){
+	let x = Math.floor(mouseX);
+	let y = Math.floor(mouseY);
+	if (!(x > -1 && y > -1 && x < W && y < H)) {
+		return;
+	}
+	document.getElementById('mouseX').innerHTML = `x: ${x}`;
+	document.getElementById('mouseY').innerHTML = `y: ${y}`;
+	let cellInfo = grid[x][y];
+	document.getElementById('waterLevel').innerHTML = `Water Level: ${cellInfo.waterLevel}`;
+	document.getElementById('elevation').innerHTML = `Elevation: ${cellInfo.elevation}`;
+}
+
 
 
 function renderAll() {
 	loadPixels();
 	let pix = 0;
-	for (let y = 0; y < H; y++) {
-		for (let x = 0; x < W; x++) {
-			let e = grid[x][y].elevation / 255;
-			let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
-			let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
-			let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
-			let col = [r,
-				g,
-				b];
-			if (SETTINGS.viewDrops && grid[x][y].waterLevel > 0) {
-				col[2] = (grid[x][y].elevation + grid[x][y].waterLevel) / (grid[x][y].elevation + SETTINGS.erosionFactor) * 255 /((SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel) < 1 ? 1 / (grid[x][y].waterLevel): SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel);
+	if (SETTINGS.viewDrops) {
+		for (let y = 0; y < H; y++) {
+			for (let x = 0; x < W; x++) {
+				let e = grid[x][y].elevation / 255;
+				let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
+				let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
+				let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
+				let col = [r,
+					g,
+					b];
+				if (grid[x][y].waterLevel > 0) {
+					col[2] = (grid[x][y].elevation + grid[x][y].waterLevel) / (grid[x][y].elevation) * 255 / ((SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel) < 1 ? 1 / (grid[x][y].waterLevel): SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel);
+				}
+				col[3] = 255;
+				pixels[pix++] = col[0];
+				pixels[pix++] = col[1];
+				pixels[pix++] = col[2];
+				pixels[pix++] = col[3];
 			}
-			col[3] = 255;
-			pixels[pix++] = col[0];
-			pixels[pix++] = col[1];
-			pixels[pix++] = col[2];
-			pixels[pix++] = col[3];
+		}
+	} else {
+		for (let y = 0; y < H; y++) {
+			for (let x = 0; x < W; x++) {
+				let e = grid[x][y].elevation / 255;
+				let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
+				let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
+				let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
+				let col = [r,
+					g,
+					b];
+				col[3] = 255;
+				pixels[pix++] = col[0];
+				pixels[pix++] = col[1];
+				pixels[pix++] = col[2];
+				pixels[pix++] = col[3];
+			}
 		}
 	}
 	updatePixels();
+	
 }
 
 

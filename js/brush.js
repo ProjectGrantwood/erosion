@@ -1,6 +1,23 @@
 const brush = {
 
 	size: 1,
+	state: 0,
+	states: [
+		'addWater',
+		'removeWater',
+		'addElevation',
+		'subElevation',
+		'addSpring',
+		'removeSpring',
+	],
+	stateNames: [
+		'Add Water',
+		'Remove Water',
+		'Increase Elevation',
+		'Decrease Elevation',
+		'Add Spring',
+		'Remove Spring',
+	],
 
 	addWater(x, y) {
 		drops.push(new Water(x, y));
@@ -35,6 +52,17 @@ const brush = {
 		}
 	},
 
+	removeSpring(x, y) {
+		let index;
+		for (let s = 0; s < springs.length; s++){
+			if (springs[s].x === x && springs[s].y === y) {
+				index = s;
+				break;
+			}
+		}
+		springs.splice(index, 1);
+	},
+
 	applyOverRadius(aFunction, x, y) {
 		if (this.size === 1 || aFunction === this.addSpring) {
 			aFunction(x, y, 1);
@@ -54,26 +82,6 @@ const brush = {
 			}
 		}
 	},
-
-	state: 0,
-
-	states: [
-		'addWater',
-		'removeWater',
-		'addElevation',
-		'subElevation',
-		'addSpring',
-		'removeSpring',
-	],
-
-	stateNames: [
-		'Add Water',
-		'Remove Water',
-		'Increase Elevation',
-		'Decrease Elevation',
-		'Add Spring',
-		'Remove Spring',
-	],
 
 	render(id, toRender) {
 		document.getElementById(id).innerHTML = toRender;

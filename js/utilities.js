@@ -1,10 +1,13 @@
 function wrap(value, minimum, maximum){
+    let wrappedValue = value;
     const range = maximum - minimum;
-    return value < minimum ?
-            minimum + range :
-            value >= maximum ?
-            value - range :
-            value;
+    while (wrappedValue < minimum) {
+            wrappedValue += range;
+    }
+    while (wrappedValue > maximum) {
+        wrappedValue -= range;
+    }
+    return wrappedValue;
 }
 
 function toggle(bool){

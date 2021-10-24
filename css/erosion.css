@@ -14,9 +14,9 @@ button {
 	grid-template-columns: 1fr 1fr 1fr;
 	grid-template-rows: 1fr 1fr 1fr;
 	gap: 4px;
-	grid-template-areas: "a b b"
-						 "c b b"
-						 "d b b"
+	grid-template-areas: "a b e"
+						 "c b e"
+						 "d b e"
 }
 
 #defaultCanvas0 {
@@ -26,6 +26,12 @@ button {
 
 #info {
 	grid-area: a;
+}
+
+#fixed-info {
+	grid-area: e;
+	padding: 4px;
+	margin: 4px;
 }
 
 #brushSizing {
@@ -45,15 +51,15 @@ button {
 
 .dropdown {
 	display: grid;
-	position: relative;
+	position: sticky;
 }
 
 .dropdown > button {
-	background-color: #A0D6A0;
+	background-color: #B6D6B6;
 }
 
 .dropdown > button:hover {
-	background-color: #B6F0B6;
+	background-color: #E1FFE1;
 }
 
 .dropdown-inactive {
@@ -72,6 +78,7 @@ button {
 	gap: 4px;
 	text-align: center;
 	grid-template-columns: repeat(2, 50%);
+	grid-template-rows: repeat()
 }
 
 .dropdown-active > div {

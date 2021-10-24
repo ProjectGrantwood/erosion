@@ -20,8 +20,6 @@
 		<div id="info" class="dropdown">
 			<button id="environmentbutton" onclick="toggleDropdown('dropdown-content-info')">Environment</button>
 			<div class="dropdown-inactive" id="dropdown-content-info">
-				<div id="drops"></div>
-				<div id="evaporationPhase"></div>
 				<button onclick="SETTINGS.toggle('viewDrops')">Toggle Water Visualization</button>
 				<button onclick="SETTINGS.toggle('evaporationCycleEnabled')">Toggle Rain/Evaporation Cycle</button>
 				<button onclick="SETTINGS.toggle('erosionEnabled')">Toggle Erosion</button>
@@ -42,7 +40,18 @@
 				<button onclick="brush.setState(2)">Increase Elevation</button>
 				<button onclick="brush.setState(3)">Decrease Elevation</button>
 				<button onclick="brush.setState(4)">Add Spring</button>
+				<button onclick="brush.setState(5)">Remove Spring</button>
 			</div>
+		</div>
+		<div id="fixed-info">
+			<h3>Current Cell: </h3>
+			<div id="mouseX"></div>
+			<div id="mouseY"></div>
+			<div id="waterLevel"></div>
+			<div id="elevation"></div>
+			<h3>Environment: </h3>
+			<div id="drops"></div>
+			<div id="evaporationPhase"></div>
 		</div>
 	</div>
 </body>
