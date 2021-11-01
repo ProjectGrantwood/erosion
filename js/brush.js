@@ -1,6 +1,6 @@
 const brush = {
 
-	size: 1,
+	size: 20,
 	state: 0,
 	states: [
 		'addWater',
@@ -20,52 +20,48 @@ const brush = {
 	],
 
 	addWater(x, y) {
-		drops.push(new Water(x, y));
-		grid[x][y].waterLevel += 1;
+		let d = new Water(x, y);
+		grid[x][y].nextWaterObjects.push(d);
+		grid[x][y].nextWaterLevel = grid[x][y].nextWaterObjects.length;
+		SETTINGS.totalDrops += 1;
 		monitorEvaporationCycle();
 	},
 
 	removeWater(x, y) {
-		let dropsOnCell = drops.filter(e => e.x === x && e.y === y);
-		for (let drop of dropsOnCell) {
-			let d = drops.indexOf(drop);
-			let x = drops[d].x;
-			let y = drops[d].y;
-			grid[x][y].waterLevel -= 1;
-			drops.splice(d, 1);
+		if (grid[x][y].nextWaterLevel <= 0){
+			return;
 		}
+		let d = grid[x][y].nextWaterObjects[grid[x][y].nextWaterObjects.length - 1];
+		grid[x][y].nextWaterObjects.pop();
+		grid[x][y].nextWaterLevel = grid[x][y].nextWaterObjects.length;
+		SETTINGS.totalDrops -= 1;
 	},
 
 	addElevation(x, y, amt = SETTINGS.erosionFactor) {
-		grid[x][y].elevation = grid[x][y].elevation + amt > MAX_ELEVATION ? MAX_ELEVATION : grid[x][y].elevation + amt;
+		grid[x][y].nextElevation = grid[x][y].nextElevation + amt > MAX_ELEVATION ? MAX_ELEVATION : grid[x][y].nextElevation + amt;
 	},
 
 	subElevation(x, y, amt = SETTINGS.erosionFactor) {
-		grid[x][y].elevation = grid[x][y].elevation - amt < MIN_ELEVATION ? MIN_ELEVATION : grid[x][y].elevation - amt;
+		grid[x][y].nextElevation = grid[x][y].nextElevation - amt < MIN_ELEVATION ? MIN_ELEVATION : grid[x][y].nextElevation - amt;
 	},
 
 	addSpring(x, y) {
-		if (!springs.some(e => e.x === x && e.y === y)) {
-			springs.push({
-				x: x, y: y, offset: Math.floor(Math.random() * SETTINGS.baseSpringGenerationRate)
-			});
+		if (springs[x][y].active === true){
+			return;
 		}
+		springs[x][y].active = true;
 	},
 
 	removeSpring(x, y) {
-		let index;
-		for (let s = 0; s < springs.length; s++){
-			if (springs[s].x === x && springs[s].y === y) {
-				index = s;
-				break;
-			}
+		if (springs[x][y].active === false){
+			return;
 		}
-		springs.splice(index, 1);
+		springs[x][y].active = false;
 	},
 
 	applyOverRadius(aFunction, x, y) {
 		if (this.size === 1 || aFunction === this.addSpring) {
-			aFunction(x, y, 1);
+			aFunction(x, y);
 			return false;
 		}
 		let size = constrain(Math.floor(this.size / 2), 1, this.size);
@@ -78,7 +74,7 @@ const brush = {
 				if (!(i > -1 && j > -1 && i < W && j < H)) {
 					continue;
 				}
-				aFunction(i, j, 1);
+				aFunction(i, j);
 			}
 		}
 	},

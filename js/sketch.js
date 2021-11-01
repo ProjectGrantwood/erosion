@@ -22,7 +22,8 @@ const SETTINGS = {
 	noiseScale: 1 / 75,
 	rainyRegionRadius: Math.floor(Math.sqrt(W * H)),
 	turnProbability: 0.8,
-	clampWaterDisplayLevel: 3,
+	clampWaterDisplayLevel: 2,
+	totalDrops: 0,
 
 	//boolean settings
 
@@ -45,23 +46,38 @@ const SETTINGS = {
 }
 
 let grid = new Array(W).fill().map(e => new Array(H).fill(0));
-let drops = [];
 let toppledCells = [];
-let springs = [{
-	x: Math.floor(W / 2),
-	y: Math.floor(H / 2),
-	offset: Math.floor(Math.random() * SETTINGS.baseSpringGenerationRate)
-}];
 
+let springs = new Array(W).fill().map(
+	e => new Array(H).fill().map(
+		j =>
+			({
+				active: false, 
+				offset: Math.floor(Math.random() * SETTINGS.baseSpringGenerationRate)
+			})
+		)
+	
+);
+
+//////////////////////////////////////////////////////////////////////////////////////
+//
+// SETUP
+//
+//////////////////////////////////////////////////////////////////////////////////////
 
 function setup() {
+
 	createCanvas(W, H);
 	pixelDensity(1);
+	noiseDetail(5, 0.5);
+	background(0);
+
 	const canvas = document.getElementById('defaultCanvas0');
 	const grid_wrapper = document.getElementById('grid-wrapper');
 	grid_wrapper.appendChild(canvas);
-	noiseDetail(5, 0.5);
-	background(0);
+
+	springs[Math.floor(W / 2)][Math.floor(H / 2)].active = true;
+
 	for (let x = 0; x < W; x++) {
 		for (let y = 0; y < H; y++) {
 			let xoff = x + W / 2;
@@ -70,16 +86,28 @@ function setup() {
 			let elevation = Math.floor((n * 255) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor; //(minH + (maxH - minH)) / 2 - 127 + (0.5 + n) * 127;
 			grid[x][y] = {
 				elevation: elevation,
+				nextElevation: elevation,
 				toppleElevation: elevation,
 				toppled: 0,
 				waterLevel: 0,
-				
+				nextWaterLevel: 0,
+				waterObjects: [],
+				nextWaterObjects: [],
 			};
 		}
 	}
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+//
+// DRAW
+//
+//////////////////////////////////////////////////////////////////////////////////////
+
 function draw() {
+
+	swapAll();
+
 	if (SETTINGS.evaporationCycleEnabled) {
 		if (SETTINGS.isInEvaporationPhase) {
 			for (let i = 0; i < SETTINGS.evaporationRate; i++) {
@@ -91,20 +119,44 @@ function draw() {
 			}
 		}
 	}
-	for (let s of springs) {
-		if ((frameCount + SETTINGS.baseSpringGenerationRate) % (SETTINGS.baseSpringGenerationRate - s.offset) === 0) {
-			brush.addElevation(s.x, s.y);
-			brush.addWater(s.x, s.y, 1);
+
+	for (let y = 0; y < H; y++) {
+		for (let x = 0; x < W; x++) {
+			if (springs[x][y].active === true) {
+				let s = springs[x][y];
+				if ((frameCount + SETTINGS.baseSpringGenerationRate) % (SETTINGS.baseSpringGenerationRate - s.offset) === 0) {
+					brush.addElevation(x, y);
+					brush.addWater(x, y);
+				}
+			}
+			let drops = grid[x][y].waterObjects;
+			for (let d = 0; d < grid[x][y].waterObjects.length; d++){
+				drops[d].update();
+			}
 		}
 	}
-	for (let d = 0; d < drops.length; d++) {
-		drops[d].update();
-	}
 	
-	swapToppledElevation();
 	renderAll();
-	document.getElementById('drops').innerHTML = `Number of Drops: ${drops.length}`;
+	document.getElementById('drops').innerHTML = `Number of Drops: ${SETTINGS.totalDrops}`;
 	document.getElementById('evaporationPhase').innerHTML = `Evaporation Phase: ${SETTINGS.isInEvaporationPhase === true ? 'Evaporating': 'Raining'}`
+}
+
+function swap(x, y){
+	const temp = {elevation, waterLevel, waterObjects} = grid[x][y];
+	grid[x][y].elevation = grid[x][y].nextElevation;
+	grid[x][y].waterLevel = grid[x][y].nextWaterLevel;
+	grid[x][y].waterObjects = grid[x][y].nextWaterObjects;
+	grid[x][y].nextElevation = temp.elevation;
+	grid[x][y].nextWaterLevel = temp.waterLevel;
+	grid[x][y].nextWaterObjects = temp.nextWaterObjects;
+}
+
+function swapAll(){
+	for (let y = 0; y < H; y++) {
+		for (let x = 0; x < W; x++) {
+			swap(x, y);
+		}
+	}
 }
 
 function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
@@ -196,7 +248,7 @@ function renderAll() {
 					g,
 					b];
 				if (grid[x][y].waterLevel > 0) {
-					col[2] = (grid[x][y].elevation + grid[x][y].waterLevel) / (grid[x][y].elevation) * 255 / ((SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel) < 1 ? 1 / (grid[x][y].waterLevel): SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel);
+					col[2] = (grid[x][y].elevation + grid[x][y].waterLevel) / (grid[x][y].elevation) * 255 / ((SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel) < 1 ? (1 / grid[x][y].waterLevel): SETTINGS.clampWaterDisplayLevel - grid[x][y].waterLevel);
 				}
 				col[3] = 255;
 				pixels[pix++] = col[0];
@@ -229,11 +281,9 @@ function renderAll() {
 
 
 function evaporate() {
-	let d = Math.floor(Math.random() * drops.length);
-	let x = drops[d].x;
-	let y = drops[d].y;
-	grid[x][y].waterLevel -= 1;
-	drops.splice(d, 1);
+	let x = Math.floor(Math.random() * W);
+	let y = Math.floor(Math.random() * H);
+	brush.removeWater(x, y);
 	monitorEvaporationCycle();
 }
 
@@ -250,10 +300,10 @@ function monitorEvaporationCycle() {
 	if (!SETTINGS.evaporationCycleEnabled) {
 		return;
 	}
-	if (drops.length < SETTINGS.maxDrops * SETTINGS.minDropRatio) {
+	if (SETTINGS.totalDrops < SETTINGS.maxDrops * SETTINGS.minDropRatio) {
 		SETTINGS.isInEvaporationPhase = false;
 	}
-	if (drops.length >= SETTINGS.maxDrops) {
+	if (SETTINGS.totalDrops >= SETTINGS.maxDrops) {
 		SETTINGS.isInEvaporationPhase = true;
 	}
 }

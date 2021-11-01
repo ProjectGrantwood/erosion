@@ -7,22 +7,22 @@ class Water {
 	}
 
     pickupSediment(){
-		if (grid[this.x][this.y].elevation - SETTINGS.erosionFactor <= MIN_ELEVATION){
+		if (grid[this.x][this.y].elevation - SETTINGS.erosionFactor < MIN_ELEVATION){
 			return;
 		}
-		grid[this.x][this.y].elevation -= SETTINGS.erosionFactor;
+		grid[this.x][this.y].nextElevation -= SETTINGS.erosionFactor;
 		this.sedimentLoad += SETTINGS.erosionFactor;
 	}
 
     depositSediment() {
 		if (this.sedimentLoad - SETTINGS.erosionFactor >= 0) {
-			grid[this.x][this.y].elevation += SETTINGS.erosionFactor
+			grid[this.x][this.y].nextElevation += SETTINGS.erosionFactor
 			this.sedimentLoad -= SETTINGS.erosionFactor;
 		}
 	}
 
 	turn(rightOrLeft) {
-		this.dir = rightOrLeft === 'right' ? (DEFAULT_NEIGHBORHOOD.length + this.dir + 1) % DEFAULT_NEIGHBORHOOD.length: (DEFAULT_NEIGHBORHOOD.length + this.dir - 1) % DEFAULT_NEIGHBORHOOD.length;
+		this.dir = rightOrLeft === 'right' ? (DEFAULT_NEIGHBORHOOD.length + this.dir + 1) % DEFAULT_NEIGHBORHOOD.length: rightOrLeft === 'left' ? (DEFAULT_NEIGHBORHOOD.length + this.dir - 1) % DEFAULT_NEIGHBORHOOD.length: this.dir;
 	}
 
     erode() {
@@ -48,12 +48,14 @@ class Water {
 		let direction = DEFAULT_NEIGHBORHOOD[this.dir];
 		let x = this.x + direction[0];
 		let y = this.y + direction[1];
-		x = wrap(x, 0, W - 1)
+		x = wrap(x, 0, W - 1);
 		y = wrap(y, 0, H - 1);
-		grid[this.x][this.y].waterLevel -= 1;
+        grid[this.x][this.y].nextWaterObjects.splice(grid[this.x][this.y].nextWaterObjects.indexOf(this), 1);
+        grid[this.x][this.y].nextWaterLevel = grid[this.x][this.y].nextWaterObjects.length;
 		this.x = x;
 		this.y = y;
-		grid[this.x][this.y].waterLevel += 1;
+        grid[this.x][this.y].nextWaterObjects.push(this);
+        grid[this.x][this.y].nextWaterLevel = grid[this.x][this.y].nextWaterObjects.length;
 		if (Math.random() < SETTINGS.turnProbability) {
 			return this.turn(['left', 'right'][Math.floor(Math.random() * 2)])
 		}
