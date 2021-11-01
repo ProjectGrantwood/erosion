@@ -1,5 +1,5 @@
-const W = Math.floor(screen.availWidth / 4);
-const H = 419;
+const W = 512;
+const H = 512;
 
 const MAX_ELEVATION = 255;
 const MIN_ELEVATION = 0;
