@@ -17,11 +17,11 @@ const SETTINGS = {
 	evaporationRate: 50,
 	rainRate: 50,
 	minDropRatio: 1 / 4,
-	erosionFactor: 0.125,
+	erosionFactor: 1 / 4,
 	baseSpringGenerationRate: 10,
-	noiseScale: 1 / 75,
+	noiseScale: 1 / 80,
 	rainyRegionRadius: Math.floor(Math.sqrt(W * H)),
-	turnProbability: 0.8,
+	turnProbability: 1 / 8,
 	clampWaterDisplayLevel: 2,
 	totalDrops: 0,
 
@@ -46,6 +46,7 @@ const SETTINGS = {
 }
 
 let grid = new Array(W).fill().map(e => new Array(H).fill(0));
+let drops = [];
 let toppledCells = [];
 
 let springs = new Array(W).fill().map(
@@ -129,11 +130,15 @@ function draw() {
 					brush.addWater(x, y);
 				}
 			}
-			let drops = grid[x][y].waterObjects;
-			for (let d = 0; d < grid[x][y].waterObjects.length; d++){
-				drops[d].update();
-			}
+			// let drops = grid[x][y].waterObjects;
+			// for (let d = 0; d < grid[x][y].waterObjects.length; d++){
+			// 	drops[d].update();
+			// }
 		}
+	}
+
+	for (let d of drops){
+		d.update();
 	}
 	
 	renderAll();
@@ -170,7 +175,7 @@ function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
 		x2 = x2 < 0 ? W - 1: x2 > W - 1 ? 0: x2;
 		y2 = y2 < 0 ? H - 1: y2 > H - 1 ? 0: y2;
 		if (grid[x][y].elevation - neighborhood.length > grid[x2][y2].elevation + SETTINGS.erosionFactor) {
-			grid[x2][y2].toppleElevation += SETTINGS.erosionFactor;
+			grid[x2][y2].nextElevation += SETTINGS.erosionFactor;
 			if (grid[x2][y2].toppled === 0) {
 				toppledCells.push([x2, y2]);
 				grid[x2][y2].toppled = 1;
@@ -191,7 +196,7 @@ function swapToppledElevation() {
 		let x = c[0];
 		let y = c[1];
 		grid[x][y].toppled = 0;
-		grid[x][y].elevation = grid[x][y].toppleElevation;
+		grid[x][y].nextElevation = grid[x][y].nextElevation;
 	}
 	toppledCells = [];
 }
@@ -206,17 +211,17 @@ function toggleEvaporationCycle() {
 
 function mouseDragged() {
 	mousePressed();
-	return false;
 }
 
 function mousePressed() {
 	let x = Math.floor(mouseX);
 	let y = Math.floor(mouseY);
-	if (!(x > -1 && y > -1 && x < W && y < H)) {
-		return;
+	if ((x > -1 && y > -1 && x < W && y < H)) {
+		brush.applyOverRadius(brush.getState(false), x, y);
+		return false;
 	}
-	brush.applyOverRadius(brush.getState(false), x, y);
 	return false;
+	
 }
 
 function mouseMoved(){

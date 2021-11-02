@@ -22,7 +22,8 @@ const brush = {
 	addWater(x, y) {
 		let d = new Water(x, y);
 		grid[x][y].nextWaterObjects.push(d);
-		grid[x][y].nextWaterLevel = grid[x][y].nextWaterObjects.length;
+		grid[x][y].nextWaterLevel += 1
+		drops.push(d);
 		SETTINGS.totalDrops += 1;
 		monitorEvaporationCycle();
 	},
@@ -32,8 +33,12 @@ const brush = {
 			return;
 		}
 		let d = grid[x][y].nextWaterObjects[grid[x][y].nextWaterObjects.length - 1];
+		d.depositSediment();
+		d.erode();
 		grid[x][y].nextWaterObjects.pop();
-		grid[x][y].nextWaterLevel = grid[x][y].nextWaterObjects.length;
+		grid[x][y].nextWaterLevel -= 1
+		drops.splice(drops.indexOf(d), 1)
+		
 		SETTINGS.totalDrops -= 1;
 	},
 
@@ -83,13 +88,13 @@ const brush = {
 		document.getElementById(id).innerHTML = toRender;
 	},
 
-	increaseSize() {
-		this.size = this.size + 1;
+	increaseSize(amt = 1) {
+		this.size = this.size + amt;
 		this.render('brushsizebutton', `Brush Size: ${this.size}`);
 	},
 
-	decreaseSize() {
-		this.size = this.size - 1;
+	decreaseSize(amt = 1) {
+		this.size = this.size - amt;
 		this.size = this.size < 1 ? 1 : this.size;
 		this.render('brushsizebutton', `Brush Size: ${this.size}`);
 	},

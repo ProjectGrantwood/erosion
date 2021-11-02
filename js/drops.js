@@ -15,7 +15,7 @@ class Water {
 	}
 
     depositSediment() {
-		if (this.sedimentLoad - SETTINGS.erosionFactor >= 0) {
+		if (this.sedimentLoad - SETTINGS.erosionFactor >= 0 && grid[this.x][this.y].elevation + SETTINGS.erosionFactor < MAX_ELEVATION) {
 			grid[this.x][this.y].nextElevation += SETTINGS.erosionFactor
 			this.sedimentLoad -= SETTINGS.erosionFactor;
 		}
@@ -69,17 +69,22 @@ class Water {
 			    this.pickupSediment();
             }
 			this.moveForward();
+        if (SETTINGS.erosionEnabled && this.sedimentLoad > grid[this.x][this.y].elevation){
+            this.depositSediment();
+            this.erode();
+        }
 		} else {
-			if (SETTINGS.erosionEnabled){
-			    this.depositSediment();
-            }
 			let p = Math.random();
 			if (p < 1/2) {
 				this.turn('right')
 			} else {
 				this.turn('left');
 			}
+            if (SETTINGS.erosionEnabled){
+                this.depositSediment();
+            }
 		}
+     
 	}
 
 
