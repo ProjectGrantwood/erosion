@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<!--Library scripts-->
 	<script src="libraries/p5.js"></script>
@@ -15,14 +16,16 @@
 	<link rel="stylesheet" type="text/css" href="css/erosion.css">
 	<meta charset="utf-8">
 </head>
+
 <body>
 	<div id="grid-wrapper">
+
 		<div id="info" class="dropdown">
 			<button id="environmentbutton" onclick="toggleDropdown('dropdown-content-info')">Environment</button>
 			<div class="dropdown-inactive" id="dropdown-content-info">
-				<button onclick="SETTINGS.toggle('viewDrops')">Toggle Water Visualization</button>
 				<button onclick="SETTINGS.toggle('evaporationCycleEnabled')">Toggle Rain/Evaporation Cycle</button>
 				<button onclick="SETTINGS.toggle('erosionEnabled')">Toggle Erosion</button>
+				<button onclick="SETTINGS.toggle('springGenerationEnabled')">Toggle Springs</button>
 			</div>
 		</div>
 		<div id="brushSizing" class="dropdown">
@@ -35,7 +38,8 @@
 			</div>
 		</div>
 		<div id="chooseBrushState" class="dropdown">
-			<button id="brushfunctionbutton" onclick="toggleDropdown('dropdown-content-brushfunction')">Brush Function</button>
+			<button id="brushfunctionbutton" onclick="toggleDropdown('dropdown-content-brushfunction')">Brush
+				Function</button>
 			<div class="dropdown-inactive" id="dropdown-content-brushfunction">
 				<button onclick="brush.setState(0)">Add Water</button>
 				<button onclick="brush.setState(1)">Remove Water</button>
@@ -43,6 +47,16 @@
 				<button onclick="brush.setState(3)">Decrease Elevation</button>
 				<button onclick="brush.setState(4)">Add Spring</button>
 				<button onclick="brush.setState(5)">Remove Spring</button>
+			</div>
+		</div>
+		<div id="visualization" class="dropdown">
+			<button id="visualizationbutton" onclick="toggleDropdown('dropdown-content-visualization')">Visualization
+				Options</button>
+			<div class="dropdown-inactive" id="dropdown-content-visualization">
+				<button onclick="SETTINGS.toggle('viewDrops')">Toggle Water Visualization</button>
+				<button onclick="SETTINGS.setEdgeMode('WRAP')">Edge Mode: Wrap</button>
+				<button onclick="SETTINGS.setEdgeMode('VOID')">Edge Mode: Void</button>
+				<button onclick="SETTINGS.setEdgeMode('IGNORE')">Edge Mode: Plane</button>
 			</div>
 		</div>
 		<div id="fixed-info">
@@ -53,8 +67,9 @@
 			<div id="elevation"></div>
 			<h3>Environment: </h3>
 			<div id="drops"></div>
-			<div id="evaporationPhase"></div>		
+			<div id="evaporationPhase"></div>
 		</div>
 	</div>
 </body>
+
 </html>

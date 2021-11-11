@@ -1,12 +1,11 @@
+//constant parameters
+
 const W = 512;
 const H = 512;
-
 const MAX_ELEVATION = 255;
-const MIN_ELEVATION = 0;
-
+const MIN_ELEVATION = 1;
 const COLOR_MAX_ELEVATION = [192, 255, 216];
 const COLOR_MIN_ELEVATION = [0, 0, 0];
-
 const DEFAULT_NEIGHBORHOOD = getNeighborhood('moore');
 
 const SETTINGS = {
@@ -14,15 +13,15 @@ const SETTINGS = {
 	//settings with numeric values
 
 	maxDrops: 50000,
-	evaporationRate: 50,
-	rainRate: 50,
+	evaporationRate: 200,
+	rainRate: 200,
 	minDropRatio: 1 / 4,
-	erosionFactor: 1 / 4,
+	erosionFactor: 1 / 8,
 	baseSpringGenerationRate: 10,
-	noiseScale: 1 / 80,
+	noiseScale: 1 / 250,
 	rainyRegionRadius: Math.floor(Math.sqrt(W * H)),
-	turnProbability: 1 / 8,
-	clampWaterDisplayLevel: 2,
+	turnProbability: 1 / 3,
+	clampWaterDisplayLevel: 1,
 	totalDrops: 0,
 
 	//boolean settings
@@ -31,6 +30,7 @@ const SETTINGS = {
 	isInEvaporationPhase: false,
 	evaporationCycleEnabled: false,
 	erosionEnabled: true,
+	springGenerationEnabled: false,
 
 	toggle(property) {
 		this[property] = toggle(this[property]);
@@ -43,6 +43,41 @@ const SETTINGS = {
 		y: Math.floor(H / 2)
 	},
 
+	//enums
+
+	edgeMode: 'IGNORE',
+
+	enums: {
+		'edgeMode': [
+			'WRAP',
+			'VOID',
+			'IGNORE',
+		],
+	},
+
+	setEdgeMode(mode) {
+		if (!this.enums['edgeMode'].includes(mode)){
+			return false;
+		}
+		this.edgeMode = mode;
+	}
+}
+
+let currentCell = {
+	x: 0,
+	y: 0,
+	waterLevel: 0,
+	elevation: 0,
+	update(){
+		this.waterLevel = grid[this.x][this.y].waterLevel;
+		this.elevation = grid[this.x][this.y].elevation;
+	},
+	render() {
+		document.getElementById('mouseX').innerHTML = `x: ${this.x}`;
+		document.getElementById('mouseY').innerHTML = `y: ${this.y}`;
+		document.getElementById('waterLevel').innerHTML = `Water Level: ${this.waterLevel}`;
+		document.getElementById('elevation').innerHTML = `Elevation: ${this.elevation}`;
+	}
 }
 
 let grid = new Array(W).fill().map(e => new Array(H).fill(0));
@@ -70,7 +105,7 @@ function setup() {
 
 	createCanvas(W, H);
 	pixelDensity(1);
-	noiseDetail(5, 0.5);
+	noiseDetail(12, 0.5);
 	background(0);
 
 	const canvas = document.getElementById('defaultCanvas0');
@@ -81,10 +116,10 @@ function setup() {
 
 	for (let x = 0; x < W; x++) {
 		for (let y = 0; y < H; y++) {
-			let xoff = x + W / 2;
-			let yoff = y + H / 1.5;
-			let n = 0.5 + 0.5 * (noise((xoff * SETTINGS.noiseScale), (yoff * SETTINGS.noiseScale)) - 0.5);
-			let elevation = Math.floor((n * 255) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor; //(minH + (maxH - minH)) / 2 - 127 + (0.5 + n) * 127;
+			let xoff = x;
+			let yoff = y;
+			let n = (0.5 + 0.3 * Math.cos(TAU * (noise(xoff * SETTINGS.noiseScale, yoff * SETTINGS.noiseScale, Math.cos(TAU * noise(xoff * SETTINGS.noiseScale * 2, yoff * SETTINGS.noiseScale * 2))))) + (1 - Math.abs(H - y * 2) / H)) / 2;
+			let elevation = Math.floor((n * 255) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor;
 			grid[x][y] = {
 				elevation: elevation,
 				nextElevation: elevation,
@@ -120,20 +155,17 @@ function draw() {
 			}
 		}
 	}
-
-	for (let y = 0; y < H; y++) {
-		for (let x = 0; x < W; x++) {
-			if (springs[x][y].active === true) {
-				let s = springs[x][y];
-				if ((frameCount + SETTINGS.baseSpringGenerationRate) % (SETTINGS.baseSpringGenerationRate - s.offset) === 0) {
-					brush.addElevation(x, y);
-					brush.addWater(x, y);
+	if (SETTINGS.springGenerationEnabled === true) {
+		for (let y = 0; y < H; y++) {
+			for (let x = 0; x < W; x++) {
+				if (springs[x][y].active === true) {
+					let s = springs[x][y];
+					if ((frameCount + SETTINGS.baseSpringGenerationRate) % (SETTINGS.baseSpringGenerationRate - s.offset) === 0) {
+						brush.addElevation(x, y);
+						brush.addWater(x, y);
+					}
 				}
 			}
-			// let drops = grid[x][y].waterObjects;
-			// for (let d = 0; d < grid[x][y].waterObjects.length; d++){
-			// 	drops[d].update();
-			// }
 		}
 	}
 
@@ -144,6 +176,8 @@ function draw() {
 	renderAll();
 	document.getElementById('drops').innerHTML = `Number of Drops: ${SETTINGS.totalDrops}`;
 	document.getElementById('evaporationPhase').innerHTML = `Evaporation Phase: ${SETTINGS.isInEvaporationPhase === true ? 'Evaporating': 'Raining'}`
+	currentCell.update();
+	currentCell.render();
 }
 
 function swap(x, y){
@@ -176,30 +210,12 @@ function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
 		y2 = y2 < 0 ? H - 1: y2 > H - 1 ? 0: y2;
 		if (grid[x][y].elevation - neighborhood.length > grid[x2][y2].elevation + SETTINGS.erosionFactor) {
 			grid[x2][y2].nextElevation += SETTINGS.erosionFactor;
-			if (grid[x2][y2].toppled === 0) {
-				toppledCells.push([x2, y2]);
-				grid[x2][y2].toppled = 1;
-			}
 			total += SETTINGS.erosionFactor;
 		}
 	}
-	grid[x][y].toppleElevation -= total;
-	if (grid[x][y].toppled === 0) {
-		grid[x][y].toppled = 1;
-		toppledCells.push([x, y]);
-	}
-
+	grid[x][y].nextElevation -= total;
 }
 
-function swapToppledElevation() {
-	for (let c of toppledCells) {
-		let x = c[0];
-		let y = c[1];
-		grid[x][y].toppled = 0;
-		grid[x][y].nextElevation = grid[x][y].nextElevation;
-	}
-	toppledCells = [];
-}
 
 function toggleEvaporationCycle() {
 	if (SETTINGS.evaporationCycleEnabled === true) {
@@ -230,11 +246,10 @@ function mouseMoved(){
 	if (!(x > -1 && y > -1 && x < W && y < H)) {
 		return;
 	}
-	document.getElementById('mouseX').innerHTML = `x: ${x}`;
-	document.getElementById('mouseY').innerHTML = `y: ${y}`;
-	let cellInfo = grid[x][y];
-	document.getElementById('waterLevel').innerHTML = `Water Level: ${cellInfo.waterLevel}`;
-	document.getElementById('elevation').innerHTML = `Elevation: ${cellInfo.elevation}`;
+	currentCell.x = x;
+	currentCell.y = y;
+	grid[x][y].waterLevel = currentCell.waterLevel;
+	grid[x][y].elevation = currentCell.elevation;
 }
 
 

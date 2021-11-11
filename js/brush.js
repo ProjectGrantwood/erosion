@@ -33,8 +33,6 @@ const brush = {
 			return;
 		}
 		let d = grid[x][y].nextWaterObjects[grid[x][y].nextWaterObjects.length - 1];
-		d.depositSediment();
-		d.erode();
 		grid[x][y].nextWaterObjects.pop();
 		grid[x][y].nextWaterLevel -= 1
 		drops.splice(drops.indexOf(d), 1)
@@ -69,14 +67,18 @@ const brush = {
 			aFunction(x, y);
 			return false;
 		}
-		let size = constrain(Math.floor(this.size / 2), 1, this.size);
-		let xmin = x - size;
-		let xmax = x + size;
-		let ymin = y - size;
-		let ymax = y + size;
+		const size = constrain(Math.floor(this.size / 2), 1, this.size);
+		const xmin = x - size;
+		const xmax = x + size;
+		const ymin = y - size;
+		const ymax = y + size;
+		const sizeSquared = size * size;
 		for (let i = xmin; i < xmax; i++) {
+			const xdist = Math.abs(i - x);
 			for (let j = ymin; j < ymax; j++) {
-				if (!(i > -1 && j > -1 && i < W && j < H)) {
+				const ydist = Math.abs(j - y);
+				const distance = ((xdist * xdist + ydist * ydist));
+				if (!(i > -1 && j > -1 && i < W && j < H) || distance > sizeSquared) {
 					continue;
 				}
 				aFunction(i, j);

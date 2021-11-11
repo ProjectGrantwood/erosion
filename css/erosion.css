@@ -12,11 +12,12 @@ button {
 #grid-wrapper {
 	display: grid;
 	grid-template-columns: 1fr 1fr 1fr;
-	grid-template-rows: 1fr 1fr 1fr;
+	grid-template-rows: 1fr 1fr 1fr 1fr;
 	gap: 4px;
 	grid-template-areas: "a b e"
 						 "c b e"
 						 "d b e"
+						 "f b e"
 }
 
 #defaultCanvas0 {
@@ -40,6 +41,10 @@ button {
 
 #chooseBrushState {
 	grid-area: d;
+}
+
+#visualization {
+	grid-area: f;
 }
 
 .dropdown-active > div {
