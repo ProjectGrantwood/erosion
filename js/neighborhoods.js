@@ -16,12 +16,12 @@ function getNeighborhood(id){
         case 'von neumann':
             neighborhood = [
                 [0, -1],
-	            [1,  0],
+	        [1,  0],
                 [0,  1],
                 [-1, 0]
             ];
             break;
-        case 'von neumann orthogonal':
+        case 'von neumann diagonal':
             neighborhood = [
                 [1,  -1],
                 [1,   1],
@@ -29,7 +29,7 @@ function getNeighborhood(id){
                 [-1, -1]
             ];
             break;
-        case 'moore orthogonal': 
+        case 'moore oblique': 
             neighborhood = [
                 [-1, -2],
                 [1,  -2],
