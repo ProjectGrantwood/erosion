@@ -15,9 +15,9 @@ button {
 	grid-template-rows: 1fr 1fr 1fr 1fr;
 	gap: 4px;
 	grid-template-areas: "a b e"
-						 "c b e"
-						 "d b e"
-						 "f b e"
+			     "c b e"
+			     "d b e"
+			     "f b e"
 }
 
 #defaultCanvas0 {
@@ -84,10 +84,6 @@ button {
 	text-align: center;
 	grid-template-columns: repeat(2, 50%);
 	grid-template-rows: repeat()
-}
-
-.dropdown-active > div {
-	margin: 4px;
 }
 
 .dropdown-active > button {
