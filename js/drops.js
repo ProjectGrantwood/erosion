@@ -7,7 +7,7 @@ class Water {
 	}
 
     pickupSediment(){
-		if (grid[this.x][this.y].nextElevation - SETTINGS.erosionFactor <= MIN_ELEVATION){
+		if (grid[this.x][this.y].nextElevation - grid[this.x][this.y].nextWaterLevel * SETTINGS.erosionFactor < MIN_ELEVATION){
 			return;
 		}
 		grid[this.x][this.y].nextElevation -= SETTINGS.erosionFactor;
@@ -15,7 +15,7 @@ class Water {
 	}
 
     depositSediment() {
-		if (this.sedimentLoad <= 0 || grid[this.x][this.y].elevation + SETTINGS.erosionFactor > MAX_ELEVATION) {
+		if (this.sedimentLoad <= 0 /*|| grid[this.x][this.y].elevation + SETTINGS.erosionFactor > MAX_ELEVATION*/) {
             return;
         }
 			grid[this.x][this.y].nextElevation += SETTINGS.erosionFactor;
@@ -30,11 +30,11 @@ class Water {
 		topple(this.x, this.y);
 	}
 
-	getCurrentElevation() {
-		return grid[this.x][this.y].elevation + grid[this.x][this.y].waterLevel;
+	getElevation(cell) {
+		return cell.elevation + cell.waterLevel;
 	}
 
-	getProposedElevation() {
+	getNextCell(){
 		let x = this.x;
 		let y = this.y;
 		let direction = DEFAULT_NEIGHBORHOOD[this.dir];
@@ -52,7 +52,7 @@ class Water {
 					return MAX_ELEVATION + 1;
 			}
 		}
-		return grid[x][y].elevation + grid[x][y].waterLevel;
+		return grid[x][y];
 	}
 
     moveForward() {
@@ -73,8 +73,13 @@ class Water {
 	}
 
 	update() {
-		let proposed = this.getProposedElevation();
-		if (proposed === false) {
+		let proposed = this.getNextCell();
+		let proposedElevation = this.getElevation(proposed);
+
+		if (proposedElevation === false) {
+
+			//If getProposedElevation() returns "false" instead of a number, it determined that the edgeMode is set to "VOID" and that the drop has approached the edge of the grid space, and therefore must be removed.
+			
 			let d = grid[this.x][this.y].waterObjects[grid[this.x][this.y].nextWaterObjects.indexOf(this)];
 			grid[this.x][this.y].nextWaterObjects.splice(d, 1);
 			grid[this.x][this.y].nextWaterLevel -= 1;
@@ -82,24 +87,28 @@ class Water {
 			SETTINGS.totalDrops -= 1;
 			return;
 		}
-		proposed += SETTINGS.erosionFactor;
-		let current = this.getCurrentElevation() - (SETTINGS.erosionFactor);
+		proposedElevation += SETTINGS.erosionFactor;
+		let currentElevation = this.getElevation(grid[this.x][this.y]) - SETTINGS.erosionFactor;
 		
-		if (current > proposed) {
+		if (currentElevation > proposedElevation) {
             if (SETTINGS.erosionEnabled){
-				if (grid[this.x][this.y].waterLevel > grid[this.x][this.y].elevation) {
-					this.depositSediment();
-				} else {
-			    	this.pickupSediment();
-				}
+				if (SETTINGS.maxSedimentLoad > this.sedimentLoad)
+			    this.pickupSediment();
             }
+			let px = this.x;
+			let py = this.y;
 			this.moveForward();
-            
+			// if (Math.random() < 0.05){
+			// topple(px, py);
+			// }
 		} else {
-			if (SETTINGS.erosionEnabled){
+			if (SETTINGS.erosionEnabled && this.sedimentLoad > SETTINGS.maxSedimentLoad){
 				this.depositSediment();
+				
 			}
+
 			this.turn(['left', 'right'][Math.floor(Math.random() * 2)]);
+			
 		}
 	}
     

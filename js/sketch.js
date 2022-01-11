@@ -5,7 +5,7 @@ const H = 512;
 const MAX_ELEVATION = 255;
 const MIN_ELEVATION = 1;
 const COLOR_MAX_ELEVATION = [192, 255, 216];
-const COLOR_MIN_ELEVATION = [0, 0, 0];
+const COLOR_MIN_ELEVATION = [64, 0, 0];
 const DEFAULT_NEIGHBORHOOD = getNeighborhood('moore');
 
 const SETTINGS = {
@@ -17,9 +17,10 @@ const SETTINGS = {
 	rainRate: 200,
 	minDropRatio: 1 / 4,
 	erosionFactor: 1 / 8,
-	baseSpringGenerationRate: 10,
-	noiseScale: 1 / 250,
-	rainyRegionRadius: Math.floor(Math.sqrt(W * H)),
+	maxSedimentLoad: 4,
+	baseSpringGenerationRate: 1,
+	noiseScale: 1 / 100,
+	rainyRegionRadius: Math.floor(Math.sqrt(W * H) / 8),
 	turnProbability: 1 / 3,
 	clampWaterDisplayLevel: 1,
 	totalDrops: 0,
@@ -45,7 +46,7 @@ const SETTINGS = {
 
 	//enums
 
-	edgeMode: 'IGNORE',
+	edgeMode: 'VOID',
 
 	enums: {
 		'edgeMode': [
@@ -118,8 +119,10 @@ function setup() {
 		for (let y = 0; y < H; y++) {
 			let xoff = x;
 			let yoff = y;
-			let n = (0.5 + 0.3 * Math.cos(TAU * (noise(xoff * SETTINGS.noiseScale, yoff * SETTINGS.noiseScale, Math.cos(TAU * noise(xoff * SETTINGS.noiseScale * 2, yoff * SETTINGS.noiseScale * 2))))) + (1 - Math.abs(H - y * 2) / H)) / 2;
-			let elevation = Math.floor((n * 255) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor;
+			let n = 0.5 + 0.3 * Math.cos(TAU * (noise(xoff * SETTINGS.noiseScale, yoff * SETTINGS.noiseScale, Math.cos(TAU * noise(xoff * SETTINGS.noiseScale * 2, yoff * SETTINGS.noiseScale * 2)))));
+			n += 1 - ((H - y * 2) ** 2 + (W - x * 2) ** 2) / ((W * H + W * H));
+			n /= 2;
+			let elevation = Math.floor((n * MAX_ELEVATION) / SETTINGS.erosionFactor) * SETTINGS.erosionFactor;
 			grid[x][y] = {
 				elevation: elevation,
 				nextElevation: elevation,
@@ -199,7 +202,7 @@ function swapAll(){
 }
 
 function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
-	if (grid[x][y].elevation < neighborhood.length) {
+	if (grid[x][y].elevation < neighborhood.length * SETTINGS.erosionFactor) {
 		return;
 	}
 	let total = 0;
@@ -208,7 +211,7 @@ function topple(x, y, neighborhood = DEFAULT_NEIGHBORHOOD) {
 		let y2 = y + n[1];
 		x2 = x2 < 0 ? W - 1: x2 > W - 1 ? 0: x2;
 		y2 = y2 < 0 ? H - 1: y2 > H - 1 ? 0: y2;
-		if (grid[x][y].elevation - neighborhood.length > grid[x2][y2].elevation + SETTINGS.erosionFactor) {
+		if (grid[x][y].elevation - neighborhood.length * SETTINGS.erosionFactor > grid[x2][y2].elevation + SETTINGS.erosionFactor) {
 			grid[x2][y2].nextElevation += SETTINGS.erosionFactor;
 			total += SETTINGS.erosionFactor;
 		}
@@ -248,8 +251,8 @@ function mouseMoved(){
 	}
 	currentCell.x = x;
 	currentCell.y = y;
-	grid[x][y].waterLevel = currentCell.waterLevel;
-	grid[x][y].elevation = currentCell.elevation;
+	currentCell.waterLevel = grid[x][y].waterLevel;
+	currentCell.elevation = grid[x][y].elevation;
 }
 
 
@@ -260,7 +263,7 @@ function renderAll() {
 	if (SETTINGS.viewDrops) {
 		for (let y = 0; y < H; y++) {
 			for (let x = 0; x < W; x++) {
-				let e = grid[x][y].elevation / 255;
+				let e = grid[x][y].elevation / MAX_ELEVATION;
 				let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
 				let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
 				let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
@@ -280,7 +283,7 @@ function renderAll() {
 	} else {
 		for (let y = 0; y < H; y++) {
 			for (let x = 0; x < W; x++) {
-				let e = grid[x][y].elevation / 255;
+				let e = grid[x][y].elevation / MAX_ELEVATION;
 				let r = (COLOR_MIN_ELEVATION[0] * (1 - e) + COLOR_MAX_ELEVATION[0] * e);
 				let g = (COLOR_MIN_ELEVATION[1] * (1 - e) + COLOR_MAX_ELEVATION[1] * e);
 				let b = (COLOR_MIN_ELEVATION[2] * (1 - e) + COLOR_MAX_ELEVATION[2] * e);
