@@ -179,7 +179,6 @@ function mousePressed() {
 		brush.applyOverRadius(brush.getState(false), x, y);
 		return false;
 	}
-	return false;
 	
 }
 
