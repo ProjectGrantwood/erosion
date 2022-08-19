@@ -1,5 +1,5 @@
-const W = 512;
-const H = 512;
+const W = 256;
+const H = 256;
 const MAX_ELEVATION = 255;
 const MIN_ELEVATION = 1;
 const COLOR_MAX_ELEVATION = [192, 255, 216];
