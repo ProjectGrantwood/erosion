@@ -7,19 +7,19 @@ class Water {
 	}
 
     pickupSediment(){
-		if (grid[this.x][this.y].nextElevation - grid[this.x][this.y].nextWaterLevel * SETTINGS.erosionFactor < MIN_ELEVATION){
+		if (this.sedimentLoad > SETTINGS.maxSedimentLoad || grid[this.x][this.y].nextElevation - grid[this.x][this.y].nextWaterLevel * SETTINGS.sedimentPickup < MIN_ELEVATION){
 			return;
 		}
-		grid[this.x][this.y].nextElevation -= SETTINGS.erosionFactor;
-		this.sedimentLoad += SETTINGS.erosionFactor;
+		grid[this.x][this.y].nextElevation -= SETTINGS.sedimentPickup;
+		this.sedimentLoad += SETTINGS.sedimentPickup;
 	}
 
     depositSediment() {
-		if (this.sedimentLoad <= 0 /*|| grid[this.x][this.y].elevation + SETTINGS.erosionFactor > MAX_ELEVATION*/) {
+		if (this.sedimentLoad <= 0 || grid[this.x][this.y].elevation + SETTINGS.sedimentDropoff > MAX_ELEVATION) {
             return;
         }
-			grid[this.x][this.y].nextElevation += SETTINGS.erosionFactor;
-			this.sedimentLoad -= SETTINGS.erosionFactor;
+			grid[this.x][this.y].nextElevation += SETTINGS.sedimentDropoff;
+			this.sedimentLoad -= SETTINGS.sedimentDropoff;
 	}
 
 	turn(rightOrLeft) {
@@ -87,27 +87,26 @@ class Water {
 			SETTINGS.totalDrops -= 1;
 			return;
 		}
-		proposedElevation += SETTINGS.erosionFactor;
-		let currentElevation = this.getElevation(grid[this.x][this.y]) - SETTINGS.erosionFactor;
 		
-		if (currentElevation > proposedElevation) {
+		let currentElevation = this.getElevation(grid[this.x][this.y])
+		
+		if (currentElevation >= proposedElevation + SETTINGS.sedimentDropoff) {
             if (SETTINGS.erosionEnabled){
-				if (SETTINGS.maxSedimentLoad > this.sedimentLoad)
+				if (this.sedimentLoad < SETTINGS.maxSedimentLoad)
 			    this.pickupSediment();
             }
-			let px = this.x;
-			let py = this.y;
 			this.moveForward();
-			// if (Math.random() < 0.05){
-			// topple(px, py);
-			// }
+			if (SETTINGS.erosionEnabled && this.sedimentLoad > SETTINGS.sedimentDropoff){
+				this.depositSediment();
+				
+			}
 		} else {
-			if (SETTINGS.erosionEnabled && this.sedimentLoad > SETTINGS.maxSedimentLoad){
+			if (SETTINGS.erosionEnabled && this.sedimentLoad > SETTINGS.sedimentDropoff){
 				this.depositSediment();
 				
 			}
 
-			this.turn(['left', 'right'][Math.floor(Math.random() * 2)]);
+			if (Math.random() < SETTINGS.turnProbability) this.turn(['left', 'right'][Math.floor(Math.random() * 2)]);
 			
 		}
 	}
